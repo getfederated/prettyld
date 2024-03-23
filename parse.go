@@ -12,26 +12,47 @@ type LDNodesList []any
 
 var _ json.Unmarshaler = (*LDNodesList)(nil)
 
-func Parse(b []byte, options *ld.JsonLdOptions) (LDNodesList, error) {
+func Parse(b any, options *ld.JsonLdOptions) (LDNodesList, error) {
 	if options == nil {
 		options = ld.NewJsonLdOptions("")
 	}
 
-	var a any
+	valueOf := reflect.ValueOf(b)
+	if valueOf.Kind() == reflect.Ptr {
+		valueOf = valueOf.Elem()
+	}
 
-	proc := ld.NewJsonLdProcessor()
+	if valueOf.Kind() == reflect.Slice {
+		if reflect.TypeOf(b).Elem().Kind() == reflect.Uint8 {
+			b, ok := valueOf.Interface().([]byte)
+			if !ok {
+				panic("expected a byte slice. This is a severe internal error")
+			}
 
-	err := json.Unmarshal(b, &a)
+			var a any
+
+			proc := ld.NewJsonLdProcessor()
+
+			err := json.Unmarshal(b, &a)
+			if err != nil {
+				return nil, err
+			}
+
+			i, err := proc.Expand(a, options)
+			if err != nil {
+				return nil, err
+			}
+
+			return LDNodesList(i), nil
+		}
+	}
+
+	byres, err := json.Marshal(b)
 	if err != nil {
 		return nil, err
 	}
 
-	i, err := proc.Expand(a, options)
-	if err != nil {
-		return nil, err
-	}
-
-	return LDNodesList(i), nil
+	return Parse(byres, options)
 }
 
 func (p LDNodesList) UnmarshalTo(dest any) error {
@@ -60,17 +81,6 @@ func (p LDNodesList) UnmarshalTo(dest any) error {
 	}
 
 	return json.Unmarshal(b, &dest)
-}
-
-func (p LDNodesList) Items() <-chan *LDNodesList {
-	c := make(chan *LDNodesList)
-	go func() {
-		defer close(c)
-		for _, item := range p {
-			c <- &LDNodesList{item}
-		}
-	}()
-	return c
 }
 
 // UnmarshalJSON is used unmarshal an expanded document into something that is

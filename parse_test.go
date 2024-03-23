@@ -82,14 +82,15 @@ func TestItems(t *testing.T) {
 
 	actual := []Person{}
 
-	for item := range p.Items() {
+	for _, item := range p {
 		var person Person
 
-		err := item.UnmarshalTo(&person)
+		nodes, err := prettyld.Parse(item, nil)
 		if err != nil {
 			t.Error(err)
 			t.FailNow()
 		}
+		nodes.UnmarshalTo(&person)
 
 		actual = append(actual, person)
 	}
@@ -134,7 +135,7 @@ func TestNesting(t *testing.T) {
 	type Person struct {
 		ID     string                     `json:"@id"`
 		Name   prettyld.ValueNode[string] `json:"https://example.com/ns#name"`
-		Friend prettyld.LDNodesList       `json:"https://example.com/ns#friend"`
+		Friend []prettyld.LDNode          `json:"https://example.com/ns#friend"`
 	}
 
 	p, err := prettyld.Parse(b, nil)
@@ -161,10 +162,15 @@ func TestNesting(t *testing.T) {
 	}
 
 	expected = "https://example.com/2"
-	for item := range person.Friend.Items() {
+	for item := range person.Friend {
 		var friend Person
 
-		err := item.UnmarshalTo(&friend)
+		nodes, err := prettyld.Parse(item, nil)
+		if err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		err = nodes.UnmarshalTo(&friend)
 		if err != nil {
 			t.Error(err)
 			t.FailNow()
