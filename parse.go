@@ -8,9 +8,11 @@ import (
 	"github.com/piprate/json-gold/ld"
 )
 
-type LDNodes []any
+type LDNodesList []any
 
-func Parse(b []byte, options *ld.JsonLdOptions) (LDNodes, error) {
+var _ json.Unmarshaler = (*LDNodesList)(nil)
+
+func Parse(b []byte, options *ld.JsonLdOptions) (LDNodesList, error) {
 	if options == nil {
 		options = ld.NewJsonLdOptions("")
 	}
@@ -29,10 +31,10 @@ func Parse(b []byte, options *ld.JsonLdOptions) (LDNodes, error) {
 		return nil, err
 	}
 
-	return LDNodes(i), nil
+	return LDNodesList(i), nil
 }
 
-func (p LDNodes) UnmarshalTo(dest any) error {
+func (p LDNodesList) UnmarshalTo(dest any) error {
 	value := reflect.ValueOf(dest)
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
@@ -60,12 +62,12 @@ func (p LDNodes) UnmarshalTo(dest any) error {
 	return json.Unmarshal(b, &dest)
 }
 
-func (p LDNodes) Items() <-chan *LDNodes {
-	c := make(chan *LDNodes)
+func (p LDNodesList) Items() <-chan *LDNodesList {
+	c := make(chan *LDNodesList)
 	go func() {
 		defer close(c)
 		for _, item := range p {
-			c <- &LDNodes{item}
+			c <- &LDNodesList{item}
 		}
 	}()
 	return c
@@ -75,7 +77,7 @@ func (p LDNodes) Items() <-chan *LDNodes {
 // easier to work with.
 //
 // Should NOT be used with an unexpanded JSON object!
-func (p *LDNodes) UnmarshalJSON(b []byte) error {
+func (p *LDNodesList) UnmarshalJSON(b []byte) error {
 	var a []any
 
 	err := json.Unmarshal(b, &a)
@@ -83,7 +85,7 @@ func (p *LDNodes) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*p = LDNodes(a)
+	*p = LDNodesList(a)
 
 	return nil
 }

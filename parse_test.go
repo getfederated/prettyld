@@ -134,7 +134,7 @@ func TestNesting(t *testing.T) {
 	type Person struct {
 		ID     string                     `json:"@id"`
 		Name   prettyld.ValueNode[string] `json:"https://example.com/ns#name"`
-		Friend prettyld.LDNodes           `json:"https://example.com/ns#friend"`
+		Friend prettyld.LDNodesList       `json:"https://example.com/ns#friend"`
 	}
 
 	p, err := prettyld.Parse(b, nil)
