@@ -81,31 +81,3 @@ func MarshalCompactJSONLD(source any, options *ld.JsonLdOptions) ([]byte, error)
 
 	return json.Marshal(inter)
 }
-
-func UnmarshalJSONLD(source any, destination any, options *ld.JsonLdOptions) ([]byte, error) {
-	if options == nil {
-		options = ld.NewJsonLdOptions("")
-	}
-
-	b, err := json.Marshal(source)
-	if err != nil {
-		return nil, err
-	}
-
-	var msa any
-	err = json.Unmarshal(b, &msa)
-	if err != nil {
-		return nil, err
-	}
-
-	inter, err := proc.Expand(msa, options)
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(inter)
-}
-
-// func UnmarshalJSONLDFromByte(source any, options *ld.JsonLdOptions) ([]byte, error) {
-
-// }
