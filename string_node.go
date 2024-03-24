@@ -4,6 +4,11 @@ import (
 	"encoding/json"
 )
 
+// String is a type that represents a string value in a JSON-LD document.
+//
+// In reality, string is a convenience type that is intended for translating
+// a `ValueNode` into a string. This is useful when you know that a value is
+// a string and you want to avoid the overhead of working with a `ValueNode`.
 type String string
 
 var _ json.Marshaler = String("")
