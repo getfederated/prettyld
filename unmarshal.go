@@ -1,7 +1,9 @@
 package prettyld
 
-func Unmarshal(b any, dest any) error {
-	list, err := Parse(b, nil)
+import "github.com/piprate/json-gold/ld"
+
+func Unmarshal(b any, dest any, options *ld.JsonLdOptions) error {
+	list, err := Parse(b, options)
 	if err != nil {
 		return err
 	}

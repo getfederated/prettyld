@@ -27,7 +27,7 @@ func TestUnmarshalString(t *testing.T) {
 
 	var dest MyModel
 
-	err := prettyld.Unmarshal(j, &dest)
+	err := prettyld.Unmarshal(j, &dest, nil)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -92,7 +92,7 @@ func TestUnmarshalLDNodesList(t *testing.T) {
 
 	var dest MyModel
 
-	err := prettyld.Unmarshal(j, &dest)
+	err := prettyld.Unmarshal(j, &dest, nil)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
