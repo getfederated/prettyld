@@ -4,6 +4,21 @@ import "encoding/json"
 
 type UnknownNode map[string]any
 
+func (u UnknownNode) IsType(typeIRI string) bool {
+	types, ok := u["@type"]
+	if !ok {
+		return false
+	}
+
+	for _, t := range types.([]string) {
+		if t == typeIRI {
+			return true
+		}
+	}
+
+	return false
+}
+
 // GetObject returns the object associated with the given predicate.
 func (u UnknownNode) GetObject(predicate string) []UnknownNode {
 	if predicate[0] == '@' {

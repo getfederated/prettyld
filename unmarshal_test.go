@@ -2,6 +2,7 @@ package prettyld_test
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/getfederated/prettyld"
@@ -32,14 +33,31 @@ func TestUnmarshalString(t *testing.T) {
 		t.FailNow()
 	}
 
-	fmt.Println(dest)
-
 	if dest.Name != "Alice" {
 		t.Errorf("expected `Alice` but got `%s`", dest.Name)
 		t.Fail()
 	}
+}
 
-	t.FailNow()
+func TestIsType(t *testing.T) {
+	t.Run("should be true if node is of specific type", func(t *testing.T) {
+		node := prettyld.UnknownNode{
+			"@type": []string{"https://example.com/ns#Person"},
+		}
+
+		if !node.IsType("https://example.com/ns#Person") {
+			t.Error("Expected true, but got false")
+		}
+	})
+	t.Run("should be true if node is of specific type", func(t *testing.T) {
+		node := prettyld.UnknownNode{
+			"@type": []string{"https://example.com/ns#Animal"},
+		}
+
+		if node.IsType("https://example.com/ns#Person") {
+			t.Error("Expected true, but got false")
+		}
+	})
 }
 
 func TestUnmarshalLDNodesList(t *testing.T) {
@@ -59,7 +77,6 @@ func TestUnmarshalLDNodesList(t *testing.T) {
 				},
 				"name": "ex:name"
 			},
-			"@type": "https://example.com/Friendship",
 			"friends": [
 				{
 					"@id": "https://example.com/1",
@@ -83,5 +100,51 @@ func TestUnmarshalLDNodesList(t *testing.T) {
 
 	if len(dest.Friends) != 2 {
 		t.Error("Expected 2 friends, but got ", len(dest.Friends))
+	}
+
+	expected := []Person{{
+		ID:   "https://example.com/1",
+		Name: prettyld.ValueNode[string]{Value: "Alice"},
+	}, {
+		ID:   "https://example.com/2",
+		Name: prettyld.ValueNode[string]{Value: "Bob"},
+	}}
+
+	actual := []Person{}
+
+	for _, v := range dest.Friends {
+		var person Person
+
+		fmt.Println(v)
+
+		nodes, err := prettyld.Parse(v, nil)
+		if err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		if err := nodes.UnmarshalTo(&person); err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+
+		actual = append(actual, person)
+	}
+
+	slices.SortFunc(actual, func(i, j Person) int {
+		if i.ID < j.ID {
+			return -1
+		} else if i.ID > j.ID {
+			return 1
+		}
+		return 0
+	})
+
+	for i, person := range actual {
+		if person.ID != expected[i].ID {
+			t.Errorf("expected %s but got %s", expected[i].ID, person.ID)
+		}
+		if person.Name.Value != expected[i].Name.Value {
+			t.Errorf("expected %s but got %s", expected[i].Name.Value, person.Name.Value)
+		}
 	}
 }

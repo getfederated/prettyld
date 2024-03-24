@@ -116,6 +116,12 @@ func Parse(b any, options *ld.JsonLdOptions) (LDNodesList, error) {
 		return LDNodesList(i), nil
 	}
 
+	marshalled, err := json.Marshal(b)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(marshalled, &b)
+
 	expanded, err := proc.Expand(b, options)
 	if err != nil {
 		return nil, err
