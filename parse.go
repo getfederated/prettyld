@@ -176,6 +176,8 @@ func (p *LDNodesList) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// Iterate returns a channel that you can range over to get the nodes in the
+// list.
 func (p LDNodesList) Iterate() <-chan UnknownNode {
 	ch := make(chan UnknownNode)
 
