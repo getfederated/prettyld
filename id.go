@@ -26,6 +26,17 @@ import (
 //
 // No need to define it as a slice.
 //
+// Do note however that if in a document, the predicate (field) gives you an
+// array of objects, then unmarshalling will fail.
+//
+// Hence, you also have the option to define the field as an array of IDs.
+//
+// For example:
+//
+//	type Person struct {
+//		OtherNodes []ID `json:"https://example.com/ns#otherNodes"`
+//	}
+//
 // See: https://www.w3.org/TR/json-ld11-api/#idl-def-JsonLdNode
 type ID string
 

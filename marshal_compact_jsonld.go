@@ -25,7 +25,13 @@ func isValidObject(source any) bool {
 			v := reflect.ValueOf(source)
 			for i := 0; i < v.Len(); i++ {
 				if v.Index(i).Kind() != reflect.Struct {
-					return false
+					if v.Index(i).Kind() != reflect.Interface {
+						return false
+					}
+					value := v.Index(i).Interface()
+					if reflect.TypeOf(value).Kind() != reflect.Struct {
+						return false
+					}
 				}
 			}
 		} else {
@@ -35,6 +41,8 @@ func isValidObject(source any) bool {
 	return true
 }
 
+// MarshalCompactJSONLD marshals the source object into a compact JSON-LD
+// document, as a byte slice.
 func MarshalCompactJSONLD(source any, options *ld.JsonLdOptions) ([]byte, error) {
 	if options == nil {
 		options = ld.NewJsonLdOptions("")

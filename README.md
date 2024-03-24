@@ -1,12 +1,10 @@
 # Pretty LD
 
-_The best library for processing JSON-LD documents. Make parsing and interpreting as intuitive as parsing just plain JSON_
+_The best JSON-LD unmarshalling library for Go._
 
-Working with JSON-LD is a pain. You have to expand the document, extract the first node, then interpret business domain fields as "predicates" to "objects". And these predicates aren't just familiar field names; they're URLs (IRIs, actually). And even if you absolutely know that a particular business domain field will legally always have a single node associated with the field, with JSON-LD, you will always get a slice of `any`. So verbose. So much work, for so little reward.
+Wouldn't it be nice if you can just unmarshal JSON-LD documents into a struct? Then Pretty LD is just the library for this!
 
-This is where Pretty LD comes along: you can just interpret JSON-LD documents as if they were plain old JSON documents!
-
-It's as easy as this:
+It's as easy as first defining your structure:
 
 ```go
 type MyModel struct {
@@ -14,21 +12,40 @@ type MyModel struct {
 	Type []string `json:"@type"`
 	Name prettyld.String `json:"https://example.com/ns#name"`
 }
+```
 
+Receiving your JSON-LD input
+
+```go
 var j = `
 	{
 		"@context": {
 			"ex": "https://example.com/ns#",
-			"name": "ex:name"
-		}
+			"name": "ex:name",
+			"Person": "ex:Person"
+		},
+		"@type": "Person",
+		"name": "Alice"
 	}
 `
+```
 
+And then parsing it using the `Unmarshal` function
+
+```go
 var myModel MyModel
+
 err := prettyld.Unmarshal(j, &myModel, nil)
 if err {
 	// Do stuff with err, ending things early.
 }
+```
 
+You should be able to see the output
+
+```go
 // Data should be in `myModel`.
+fmt.Println(myModel.ID)
+fmt.Println(myModel.Type)
+fmt.Println(myModel.Name)
 ```
