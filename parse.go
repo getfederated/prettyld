@@ -9,6 +9,8 @@ import (
 	"github.com/piprate/json-gold/ld"
 )
 
+// This is just a helper type to make it easier to work with expanded JSON-LD
+// documents.
 type LDNodesList []any
 
 var _ json.Unmarshaler = (*LDNodesList)(nil)
@@ -172,4 +174,20 @@ func (p *LDNodesList) UnmarshalJSON(b []byte) error {
 	*p = LDNodesList(a)
 
 	return nil
+}
+
+func (p LDNodesList) Iterate() <-chan UnknownNode {
+	ch := make(chan UnknownNode)
+
+	go func() {
+		defer close(ch)
+		for _, v := range p {
+			u, ok := v.(UnknownNode)
+			if ok {
+				ch <- UnknownNode(u)
+			}
+		}
+	}()
+
+	return ch
 }

@@ -181,3 +181,105 @@ func TestNesting(t *testing.T) {
 		}
 	}
 }
+
+func TestIsMSA(t *testing.T) {
+	b := []byte(`{
+		"@context": {
+			"ex": "https://example.com/ns#",
+			"name": "ex:name",
+			"friend": {
+				"@id": "ex:friend",
+				"@type": "@id"
+			}
+		},
+		"@id": "https://example.com/1",
+		"name": "Alice",
+		"friend": {
+			"@id": "https://example.com/2",
+			"name": "Bob"
+		}
+	}`)
+
+	p, err := prettyld.Parse(b, nil)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	if len(p) <= 0 {
+		t.Error("expected more than 0 nodes")
+	}
+
+	first := p[0]
+	if _, ok := first.(map[string]any); !ok {
+		t.Error("expected a map")
+	}
+}
+
+func TestIterate(t *testing.T) {
+	b := []byte(`[
+		{
+			"@context": {
+				"ex": "https://example.com/ns#",
+				"name": "ex:name"
+			},
+			"@id": "https://example.com/1",
+			"name": "Alice"
+		},
+		{
+			"@context": {
+				"ex": "https://example.com/ns#",
+				"name": "ex:name"
+			},
+			"@id": "https://example.com/2",
+			"name": "Bob"
+		}
+	]`)
+
+	p, err := prettyld.Parse(b, nil)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	expected := []Person{{
+		ID:   "https://example.com/1",
+		Name: prettyld.ValueNode[string]{Value: "Alice"},
+	}, {
+		ID:   "https://example.com/2",
+		Name: prettyld.ValueNode[string]{Value: "Bob"},
+	}}
+
+	actual := []Person{}
+
+	for v := range p.Iterate() {
+		var person Person
+
+		nodes, err := prettyld.Parse(v, nil)
+		if err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+		nodes.UnmarshalTo(&person)
+
+		actual = append(actual, person)
+	}
+
+	slices.SortFunc(actual, func(i, j Person) int {
+		if i.ID < j.ID {
+			return -1
+		} else if i.ID > j.ID {
+			return 1
+		}
+		return 0
+	})
+
+	for i, person := range actual {
+		if person.ID != expected[i].ID {
+			t.Errorf("expected %s but got %s", expected[i].ID, person.ID)
+		}
+		if person.Name.Value != expected[i].Name.Value {
+			t.Errorf("expected %s but got %s", expected[i].Name.Value, person.Name.Value)
+		}
+	}
+}
