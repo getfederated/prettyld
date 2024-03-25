@@ -51,12 +51,10 @@ fmt.Println(myModel.Name)
 And then, to go the other way around, you'd do it like so:
 
 ```go
-b, err := prettyld.WithContext{
-	Context: map[string]interface{
-		"ex": "https://example.com",
-		"name": "ex:name",
-	},
-}.MarshalCompactJSONLD(myModel, nil)
+b, err := prettyld.WithContext({
+	"ex": "https://example.com",
+	"name": "ex:name",
+}).MarshalCompactJSONLD(myModel, nil)
 
 if err != nil {
 	// Do stuff with err ending things early
