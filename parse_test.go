@@ -318,3 +318,19 @@ func TestUnmarshalToSlice(t *testing.T) {
 		t.Errorf("expected %s but got %s", expected, person[0].Name.Value)
 	}
 }
+
+func TestUnmarshalToString(t *testing.T) {
+	p := LDNodesList{{"@value": "Alice"}}
+
+	var str String
+	err := p.UnmarshalTo(&str)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	expected := "Alice"
+	if str != String(expected) {
+		t.Errorf("expected %s but got %s", expected, str)
+	}
+}
