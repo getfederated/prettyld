@@ -11,7 +11,7 @@ import (
 
 // This is just a helper type to make it easier to work with expanded JSON-LD
 // documents.
-type LDNodesList []any
+type LDNodesList []UnknownNode
 
 var _ json.Unmarshaler = (*LDNodesList)(nil)
 
@@ -74,7 +74,7 @@ func getByteSlice(b any) ([]byte, error) {
 // Parse parses something in hopes that it is a JSON-LD document, and returns
 // an LDNodesList, that will enable you to later unmarshal it into a struct of
 // your choosing.
-func Parse(b any, options *ld.JsonLdOptions) (LDNodesList, error) {
+func parse(b any, options *ld.JsonLdOptions) (LDNodesList, error) {
 	if options == nil {
 		options = ld.NewJsonLdOptions("")
 	}
@@ -113,7 +113,16 @@ func Parse(b any, options *ld.JsonLdOptions) (LDNodesList, error) {
 			return nil, err
 		}
 
-		return LDNodesList(i), nil
+		maps := []UnknownNode{}
+		for _, el := range i {
+			m, ok := el.(map[string]any)
+			if !ok {
+				return nil, errors.New("expected a map")
+			}
+			maps = append(maps, UnknownNode(m))
+		}
+
+		return LDNodesList(maps), nil
 	}
 
 	marshalled, err := json.Marshal(b)
@@ -121,6 +130,9 @@ func Parse(b any, options *ld.JsonLdOptions) (LDNodesList, error) {
 		return nil, err
 	}
 	err = json.Unmarshal(marshalled, &b)
+	if err != nil {
+		return nil, err
+	}
 
 	expanded, err := proc.Expand(b, options)
 	if err != nil {
@@ -132,7 +144,7 @@ func Parse(b any, options *ld.JsonLdOptions) (LDNodesList, error) {
 		return nil, err
 	}
 
-	return Parse(bytes, options)
+	return parse(bytes, options)
 }
 
 func (p LDNodesList) UnmarshalTo(dest any) error {
@@ -168,7 +180,7 @@ func (p LDNodesList) UnmarshalTo(dest any) error {
 //
 // Should NOT be used with an unexpanded JSON object!
 func (p *LDNodesList) UnmarshalJSON(b []byte) error {
-	var a []any
+	var a []UnknownNode
 
 	fmt.Println(string(b))
 
@@ -190,10 +202,7 @@ func (p LDNodesList) Iterate() <-chan UnknownNode {
 	go func() {
 		defer close(ch)
 		for _, v := range p {
-			u, ok := v.(UnknownNode)
-			if ok {
-				ch <- UnknownNode(u)
-			}
+			ch <- v
 		}
 	}()
 

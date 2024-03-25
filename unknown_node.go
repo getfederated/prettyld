@@ -20,7 +20,7 @@ func (u UnknownNode) IsType(typeIRI string) bool {
 }
 
 // GetObject returns the object associated with the given predicate.
-func (u UnknownNode) GetObject(predicate string) []UnknownNode {
+func (u UnknownNode) GetObject(predicate string) LDNodesList {
 	if predicate[0] == '@' {
 		return []UnknownNode{}
 	}
@@ -37,7 +37,7 @@ func (u UnknownNode) GetObject(predicate string) []UnknownNode {
 }
 
 // UnmarshalTo unmarshals the node into the given destination. It is analogous
-// to Parser.UnmarshalTo.
+// to LDNodesList.UnmarshalTo.
 func (u UnknownNode) UnmarshalTo(dest any) error {
 	b, err := json.Marshal(u)
 	if err != nil {

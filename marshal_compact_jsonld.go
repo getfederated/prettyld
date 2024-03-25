@@ -10,40 +10,54 @@ import (
 
 var proc = ld.NewJsonLdProcessor()
 
-func isValidObject(source any) bool {
-	// TODO: perhaps it should be a red flag if the source is a slice. Should we
-	//   not also check the values inside sub structs?
-	//
-	// Or will the MarshalCompactJSONLD do that recursively?
-
+func isMSA(source any) bool {
 	t := reflect.TypeOf(source)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
+	if t.Kind() == reflect.Map {
+		if t.Key().Kind() != reflect.String {
+			return false
+		}
+	} else {
+		return false
+	}
+	return true
+}
+
+func isValidObject(source any) bool {
+	// TODO: perhaps it should be a red flag if the source is a slice. Should we
+	//   not also check the values inside sub structs?
+	//
+	// Or will the marshalCompactJSONLD do that recursively?
+
+	t := reflect.ValueOf(source)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	// If not struct, then it should be false…
 	if t.Kind() != reflect.Struct {
+		// Unless…
+
 		if t.Kind() == reflect.Slice {
-			v := reflect.ValueOf(source)
-			for i := 0; i < v.Len(); i++ {
-				if v.Index(i).Kind() != reflect.Struct {
-					if v.Index(i).Kind() != reflect.Interface {
-						return false
-					}
-					value := v.Index(i).Interface()
-					if reflect.TypeOf(value).Kind() != reflect.Struct {
-						return false
-					}
+			for i := 0; i < t.Len(); i++ {
+				if !isValidObject(t.Index(i).Interface()) {
+					return false
 				}
 			}
-		} else {
+		} else if !isMSA(source) {
 			return false
 		}
 	}
 	return true
 }
 
-// MarshalCompactJSONLD marshals the source object into a compact JSON-LD
+type Context any
+
+// marshalCompactJSONLD marshals the source object into a compact JSON-LD
 // document, as a byte slice.
-func MarshalCompactJSONLD(source any, options *ld.JsonLdOptions) ([]byte, error) {
+func marshalCompactJSONLD(source any, context Context, options *ld.JsonLdOptions) ([]byte, error) {
 	if options == nil {
 		options = ld.NewJsonLdOptions("")
 	}
@@ -57,32 +71,13 @@ func MarshalCompactJSONLD(source any, options *ld.JsonLdOptions) ([]byte, error)
 		return nil, err
 	}
 
-	t := reflect.TypeOf(source)
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	if t.Kind() == reflect.Slice {
-		var msa []any
-		err = json.Unmarshal(b, &msa)
-		if err != nil {
-			return nil, err
-		}
-
-		inter, err := proc.Compact(msa, nil, options)
-		if err != nil {
-			return nil, err
-		}
-
-		return json.Marshal(inter)
-	}
-
 	var msa any
 	err = json.Unmarshal(b, &msa)
 	if err != nil {
 		return nil, err
 	}
 
-	inter, err := proc.Compact(msa, nil, options)
+	inter, err := proc.Compact(msa, context, options)
 	if err != nil {
 		return nil, err
 	}

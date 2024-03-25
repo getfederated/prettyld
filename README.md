@@ -1,4 +1,4 @@
-# Pretty LD
+# prettyld
 
 _The best JSON-LD unmarshalling library for Go._
 
@@ -49,3 +49,20 @@ fmt.Println(myModel.ID)
 fmt.Println(myModel.Type)
 fmt.Println(myModel.Name)
 ```
+
+And then, to go the other way around, you'd do it like so:
+
+```go
+b, err := prettyld.WithContext{
+	Context: map[string]interface{
+		"ex": "https://example.com",
+		"name": "ex:name",
+	},
+}.MarshalCompactJSONLD(myModel, nil)
+
+if err != nil {
+	// Do stuff with err ending things early
+}
+```
+
+And the resulting JSON-encoded JSON-LD will be in the byte slice `b`.

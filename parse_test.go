@@ -1,15 +1,13 @@
-package prettyld_test
+package prettyld
 
 import (
 	"slices"
 	"testing"
-
-	"github.com/getfederated/prettyld"
 )
 
 type Person struct {
-	ID   string                     `json:"@id"`
-	Name prettyld.ValueNode[string] `json:"https://example.com/ns#name"`
+	ID   string            `json:"@id"`
+	Name ValueNode[string] `json:"https://example.com/ns#name"`
 }
 
 func TestParseAndUnmarshal(t *testing.T) {
@@ -23,11 +21,11 @@ func TestParseAndUnmarshal(t *testing.T) {
 	}`)
 
 	type Person struct {
-		ID   string                     `json:"@id"`
-		Name prettyld.ValueNode[string] `json:"https://example.com/ns#name"`
+		ID   string            `json:"@id"`
+		Name ValueNode[string] `json:"https://example.com/ns#name"`
 	}
 
-	p, err := prettyld.Parse(b, nil)
+	p, err := parse(b, nil)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -66,7 +64,7 @@ func TestItems(t *testing.T) {
 		}
 	]`)
 
-	p, err := prettyld.Parse(b, nil)
+	p, err := parse(b, nil)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -74,10 +72,10 @@ func TestItems(t *testing.T) {
 
 	expected := []Person{{
 		ID:   "https://example.com/1",
-		Name: prettyld.ValueNode[string]{Value: "Alice"},
+		Name: ValueNode[string]{Value: "Alice"},
 	}, {
 		ID:   "https://example.com/2",
-		Name: prettyld.ValueNode[string]{Value: "Bob"},
+		Name: ValueNode[string]{Value: "Bob"},
 	}}
 
 	actual := []Person{}
@@ -85,7 +83,7 @@ func TestItems(t *testing.T) {
 	for _, item := range p {
 		var person Person
 
-		nodes, err := prettyld.Parse(item, nil)
+		nodes, err := parse(item, nil)
 		if err != nil {
 			t.Error(err)
 			t.FailNow()
@@ -133,12 +131,12 @@ func TestNesting(t *testing.T) {
 	}`)
 
 	type Person struct {
-		ID     string                     `json:"@id"`
-		Name   prettyld.ValueNode[string] `json:"https://example.com/ns#name"`
-		Friend prettyld.LDNodesList       `json:"https://example.com/ns#friend"`
+		ID     string            `json:"@id"`
+		Name   ValueNode[string] `json:"https://example.com/ns#name"`
+		Friend LDNodesList       `json:"https://example.com/ns#friend"`
 	}
 
-	p, err := prettyld.Parse(b, nil)
+	p, err := parse(b, nil)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -165,7 +163,7 @@ func TestNesting(t *testing.T) {
 	for _, item := range person.Friend {
 		var friend Person
 
-		nodes, err := prettyld.Parse(item, nil)
+		nodes, err := parse(item, nil)
 		if err != nil {
 			t.Error(err)
 			t.FailNow()
@@ -182,7 +180,7 @@ func TestNesting(t *testing.T) {
 	}
 }
 
-func TestIsMSA(t *testing.T) {
+func TestParseIsMSA(t *testing.T) {
 	b := []byte(`{
 		"@context": {
 			"ex": "https://example.com/ns#",
@@ -200,7 +198,7 @@ func TestIsMSA(t *testing.T) {
 		}
 	}`)
 
-	p, err := prettyld.Parse(b, nil)
+	p, err := parse(b, nil)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -208,11 +206,6 @@ func TestIsMSA(t *testing.T) {
 
 	if len(p) <= 0 {
 		t.Error("expected more than 0 nodes")
-	}
-
-	first := p[0]
-	if _, ok := first.(map[string]any); !ok {
-		t.Error("expected a map")
 	}
 }
 
@@ -236,7 +229,7 @@ func TestIterate(t *testing.T) {
 		}
 	]`)
 
-	p, err := prettyld.Parse(b, nil)
+	p, err := parse(b, nil)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -244,10 +237,10 @@ func TestIterate(t *testing.T) {
 
 	expected := []Person{{
 		ID:   "https://example.com/1",
-		Name: prettyld.ValueNode[string]{Value: "Alice"},
+		Name: ValueNode[string]{Value: "Alice"},
 	}, {
 		ID:   "https://example.com/2",
-		Name: prettyld.ValueNode[string]{Value: "Bob"},
+		Name: ValueNode[string]{Value: "Bob"},
 	}}
 
 	actual := []Person{}
@@ -255,7 +248,7 @@ func TestIterate(t *testing.T) {
 	for v := range p.Iterate() {
 		var person Person
 
-		nodes, err := prettyld.Parse(v, nil)
+		nodes, err := parse(v, nil)
 		if err != nil {
 			t.Error(err)
 			t.FailNow()
@@ -274,6 +267,10 @@ func TestIterate(t *testing.T) {
 		return 0
 	})
 
+	if len(actual) != len(expected) {
+		t.Errorf("expected 2 but got %d", len(actual))
+	}
+
 	for i, person := range actual {
 		if person.ID != expected[i].ID {
 			t.Errorf("expected %s but got %s", expected[i].ID, person.ID)
@@ -281,5 +278,43 @@ func TestIterate(t *testing.T) {
 		if person.Name.Value != expected[i].Name.Value {
 			t.Errorf("expected %s but got %s", expected[i].Name.Value, person.Name.Value)
 		}
+	}
+}
+
+func TestUnmarshalToSlice(t *testing.T) {
+	b := []byte(`{
+		"@context": {
+			"ex": "https://example.com/ns#",
+			"name": "ex:name"
+		},
+		"@id": "https://example.com/1",
+		"name": "Alice"
+	}`)
+
+	p, err := parse(b, nil)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	var person []Person
+	err = p.UnmarshalTo(&person)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	if len(person) != 1 {
+		t.Errorf("expected 1 but got %d", len(person))
+	}
+
+	expected := "https://example.com/1"
+	if person[0].ID != expected {
+		t.Errorf("expected %s but got %s", expected, person[0].ID)
+	}
+
+	expected = "Alice"
+	if person[0].Name.Value != expected {
+		t.Errorf("expected %s but got %s", expected, person[0].Name.Value)
 	}
 }

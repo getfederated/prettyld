@@ -16,7 +16,9 @@ var _ json.Marshaler = ValueNode[int]{}
 var _ json.Unmarshaler = (*ValueNode[int])(nil)
 
 func (vn ValueNode[V]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(vn.Value)
+	type t ValueNode[V]
+	v := t(vn)
+	return json.Marshal(v)
 }
 
 func (vn *ValueNode[V]) UnmarshalJSON(data []byte) error {
