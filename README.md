@@ -1,7 +1,5 @@
 # prettyld
 
-_The best JSON-LD unmarshalling library for Go._
-
 Wouldn't it be nice if you can just unmarshal JSON-LD documents into a struct? Then Pretty LD is just the library for this!
 
 It's as easy as first defining your structure:
