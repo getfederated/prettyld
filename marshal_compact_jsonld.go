@@ -38,8 +38,8 @@ func isValidObject(source any) bool {
 
 	// If not struct, then it should be false…
 	if t.Kind() != reflect.Struct {
-		// Unless…
 
+		// Unless…
 		if t.Kind() == reflect.Slice {
 			for i := 0; i < t.Len(); i++ {
 				if !isValidObject(t.Index(i).Interface()) {
